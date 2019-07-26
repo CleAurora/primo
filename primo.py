@@ -7,11 +7,10 @@ import functools
 import traceback
 import xml.sax
 import datetime
-import time
 from heapq import heappop, heappush
 from pprint import pprint
 from optparse import OptionParser
-from cStringIO import StringIO
+from io import StringIO
 
 if sys.platform == 'win32':
     import _winreg
@@ -73,7 +72,7 @@ class Process(object):
         bin = path_join(self.path, self.bin).encode(sys.getfilesystemencoding())
 
         if self.disabled:
-            print 'Process "%s (%s)" is disabled, can\'t StartNow' % (bin, self.id)
+            print('Process "%s (%s)" is disabled, can\'t StartNow' % (bin, self.id))
             return
         
         args = StringIO()
@@ -182,8 +181,8 @@ class ScheduleCallbackInfo(object):
 def warn_if_dying(meth):
     def new(*args, **kwargs):
         if args[0].dying: # assuming args[0] is the self param
-            print 'WARNING: Not supposed to happen when primo is dying.', \
-                'Callbacks scheduled when primo is dying will never be executed. Stack: \n"'
+            print ('WARNING: Not supposed to happen when primo is dying.', \
+                'Callbacks scheduled when primo is dying will never be executed. Stack: \n"')
             traceback.print_list(traceback.extract_stack())
             
         return meth(*args, **kwargs)
@@ -243,7 +242,7 @@ class Primo(object):
         info = ScheduleCallbackInfo(timestamp, callback)
 
         if self.scheduling_log:
-            print info
+            print (info)
             
         heappush(self.schedule, info)
         return id(info)
@@ -279,7 +278,7 @@ class Primo(object):
         return self.post_event_timestamp('timer', process, callback, timestamp)    
         
     def raise_global_event(self, event, cancel_event = None):
-        for p in self.processes.itervalues():
+        for p in self.processes.values():
             self.raise_process_event(event, p, cancel_event)
             
     def raise_process_event(self, event, process, cancel_event = None):
@@ -289,7 +288,7 @@ class Primo(object):
         for c in process.listeners:
             try:
                 c(event, self, process)
-            except CancelEventException, ex:
+            except CancelEventException as ex:
                 if cancel_event:
                     try:
                         #
@@ -297,17 +296,17 @@ class Primo(object):
                         # (hence can't generate more events)
                         #
                         self.raise_process_event(cancel_event, self, p)
-                    except Exception, ex:
-                        print 'unexpected exception calling cancel listeners: %s' % ex
+                    except Exception as ex:
+                        print('unexpected exception calling cancel listeners: %s' % ex)
                         
                     raise # reraise the exception after notifying the cancel
                 else:
-                    print 'callback "%s" is trying to cancel the event "%s", that can\'t be cancelled. Exception: %s' \
-                          % (c, event, ex)
+                    print ('callback "%s" is trying to cancel the event "%s", that can\'t be cancelled. Exception: %s' \
+                          % (c, event, ex))
                 
                 
-            except Exception, ex:
-                print 'unexpected exception from callback "%s": %s' % (c, ex)
+            except Exception as ex:
+                print ('unexpected exception from callback "%s": %s' % (c, ex))
                 
             
     def run(self):
@@ -325,12 +324,12 @@ class Primo(object):
                     c = heappop(self.schedule)
                     try:
                         c.callback()
-                    except PrimoStop, ex:
-                        print 'primo.Stop() called'
+                    except PrimoStop as ex:
+                        print ('primo.Stop() called')
                         self.dying = True
                         break
-                    except Exception, ex:
-                        print 'exception on main loop: %s' % (repr(ex),)
+                    except Exception as ex:
+                        print ('exception on main loop: %s' % (repr(ex),))
                     
                 if not self.schedule:
                     time.sleep(max_sleep)
@@ -344,8 +343,8 @@ class Primo(object):
                 time_to_next = min( (time_to_next, max_sleep) )
 
                 time.sleep(time_to_next)                
-            except BaseException, ex:
-                print 'exception on main loop: %s' % (repr(ex),)
+            except BaseException as ex:
+                print ('exception on main loop: %s' % (repr(ex),))
                 self.dying = True
                 break
 
@@ -404,7 +403,7 @@ class StringCodeAdapter(object):
         globals = {'event': event, 'primo' : primo, 'process' : process, 'ret' : None}
         if self.globals:
             globals.update(self.globals)
-        exec self.func in globals
+        exec(self.func, globals)
         return globals['ret']
 
     def __repr__(self):
@@ -475,7 +474,7 @@ class EachXSecondsListener(object):
         self.primo.post_timer_event(self.process, self, self.interval)
 
     def __call__(self, action, primo, process):
-        print 'EachXSeconds, callback="%s", interval="%0.2f"' % (self.code, self.interval)
+        print ('EachXSeconds, callback="%s", interval="%0.2f"' % (self.code, self.interval))
         self._schedule()
         self.code('timer', primo, process)
         
@@ -503,11 +502,11 @@ class RunningPeriodListener(object):
             
 
         if inside_period and not self.process.running:
-            print 'inside running period: ', self.start, self.end, current_time
+            print('inside running period: ', self.start, self.end, current_time)
             self.process.Start()
 
         if not inside_period and self.process.running:
-            print 'outside running period: ', self.start, self.end, current_time
+            print('outside running period: ', self.start, self.end, current_time)
             self.process.KillNow()
                     
         self._schedule()
@@ -538,7 +537,7 @@ class OnSpecificTimeListener(object):
         self.primo.schedule_callback_timestamp(self, time.mktime(d.timetuple()))
 
     def __call__(self):
-        print 'OnSpecificTime, callback="%s", datetime="%s"' % (self.code, self.datetime)
+        print ('OnSpecificTime, callback="%s", datetime="%s"' % (self.code, self.datetime))
         self.code('timer', self.primo, self.process)
 
         #
@@ -890,7 +889,7 @@ class XmlConfigParser(xml.sax.handler.ContentHandler):
             # The code will be executed now, so it'll probably be used
             # define variables and functions, and not to run any code
             #
-            exec code in self.globals
+            exec(code, self.globals)
             
             self.python_code = False
             self.current_python_code = ''
@@ -957,7 +956,7 @@ def SetupCommandLine():
     return parser
 
 def usage():
-    print 'usage: primo.py [xml config file]'
+    print ('usage: primo.py [xml config file]')
 
 def main():
     if len(sys.argv) < 2:
@@ -980,9 +979,9 @@ def main():
 
     if options.debug:
         for id, p in primo.processes.iteritems():
-            print pprint( (id, p, p.listeners, p.command_line_parameters) )
+            print (pprint( (id, p, p.listeners, p.command_line_parameters) ))
 
-    print 'running...'
+    print ('running...')
     primo.run()    
 
 if __name__ == '__main__':
