@@ -69,7 +69,7 @@ class Process(object):
         if self.running:
             return
         
-        bin = path_join(self.path, self.bin).encode(sys.getfilesystemencoding())
+        bin = path_join(self.path, self.bin).encode(sys.getfilesystemencoding()).decode("utf-8")
 
         if self.disabled:
             print('Process "%s (%s)" is disabled, can\'t StartNow' % (bin, self.id))
