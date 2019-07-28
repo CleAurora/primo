@@ -13,13 +13,13 @@ from optparse import OptionParser
 from io import StringIO
 
 if sys.platform == 'win32':
-    import _winreg
+    import winreg
 
 
 def path_join(a, *args):
     return os.path.join(a, *args)
 
-class CancelEventException(object):
+class CancelEventException(Exception):
     def __init__(self, who, reason):
         pass
 
@@ -79,7 +79,7 @@ class Process(object):
         args.write(bin)
         args.write(' ')
         for arg in self.command_line_parameters:
-            if isinstance(arg, basestring):
+            if isinstance(arg, str):
                 args.write(arg)
             else:
                 args.write(arg(self.primo, self))
@@ -295,7 +295,7 @@ class Primo(object):
                         # it will not cause a stack overflow because this event can't be cancelled
                         # (hence can't generate more events)
                         #
-                        self.raise_process_event(cancel_event, self, p)
+                        self.raise_process_event(cancel_event, self, c)
                     except Exception as ex:
                         print('unexpected exception calling cancel listeners: %s' % ex)
                         
@@ -446,7 +446,7 @@ class ProcessMethodAdapter(object):
 class RunCodeOnEventListener(object):
     def __init__(self, event_filter, func):
         self.func = func
-        if isinstance(event_filter, basestring):
+        if isinstance(event_filter, str):
             self.event_filter = [str(event_filter)]
         else:
             self.event_filter = event_filter
@@ -548,7 +548,7 @@ class OnSpecificTimeListener(object):
         self._schedule()
 
 test_xml = \
-'''
+r'''
 <Primo>
  <GlobalListeners>
   <EventLogger/>
@@ -681,7 +681,7 @@ class XmlConfigParser(xml.sax.handler.ContentHandler):
         path = self.EmbeddedCodeProcessor(attrs['path'])
         mode = 'rb'
 
-        f = file(path, mode)
+        f = open(path, mode)
         process.setup_stdin(f)
 
     def _PythonCode(self, name, attrs):
@@ -699,7 +699,7 @@ class XmlConfigParser(xml.sax.handler.ContentHandler):
         else:
             mode = 'wb'
 
-        f = file(path, mode)
+        f = open(path, mode)
         process.setup_stdout(f)        
                 
         
@@ -761,9 +761,9 @@ class XmlConfigParser(xml.sax.handler.ContentHandler):
                     value = attrs['default']
             elif name == 'ParameterFromRegistry':
                 if sys.platform == 'win32':
-                    k = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, attrs['regkey'])
-                    value = _winreg.QueryValueEx(k, attrs['regvalue'])[0]
-                    value = _winreg.ExpandEnvironmentStrings(value)
+                    k = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, attrs['regkey'])
+                    value = winreg.QueryValueEx(k, attrs['regvalue'])[0]
+                    value = winreg.ExpandEnvironmentStrings(value)
                 else:
                     print >> sys.stderr, \
                     'WARNING: ParameterFromRegistry tag is support only on Windows, ' + \
@@ -963,7 +963,7 @@ def main():
         usage()
         return 
     
-    options, args = SetupCommandLine().parse_args()
+    options, _ = SetupCommandLine().parse_args()
 
     #
     # option must respect syntax name=value, like
@@ -978,7 +978,7 @@ def main():
     primo = x.parse_file(sys.argv[1])
 
     if options.debug:
-        for id, p in primo.processes.iteritems():
+        for id, p in primo.processes.items():
             print (pprint( (id, p, p.listeners, p.command_line_parameters) ))
 
     print ('running...')
