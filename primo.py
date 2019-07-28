@@ -77,7 +77,8 @@ class Process(object):
         
         args = StringIO()
         args.write(bin)
-        args.write(' ')
+        args.write(' '.encode(sys.getfilesystemencoding()).decode("utf-8"))
+            
         for arg in self.command_line_parameters:
             if isinstance(arg, str):
                 args.write(arg)
