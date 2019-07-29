@@ -16,7 +16,7 @@ The following config file will launch notepad, and stop primo when notepad is cl
  
  <Process path="{windows_path}" bin="notepad.exe" id="notepad">
   <AutoStart/>
-  <EventHandler event="after_finish" action="{ primo.Stop() }"/>
+  <OnEvent event="after_finish" action="{ primo.Stop() }"/>
  </Process>
  
 </Primo>
@@ -83,13 +83,13 @@ Some tags have an "action" attribute, that specifies a python code to run where 
 
 ```xml
 <!-- Process will be started again when it finishes (or crashes) -->
-<EventHandler event="after_finish" action="{ process.Start() }"/>
+<OnEvent event="after_finish" action="{ process.Start() }"/>
 
 <!-- print process id after attach -->
-<EventHandler event="after_start" action="{ print process.pid }"/>
+<OnEvent event="after_start" action="{ print process.pid }"/>
 
 <!-- create a pid file. "pid_file_name" is a parameter. All parameters are added to actions global scope -->
-<EventHandler event="after_start" action="{ file(pid_file_name, 'w').write(process.pid) }"/>
+<OnEvent event="after_start" action="{ file(pid_file_name, 'w').write(process.pid) }"/>
 ```
 
 Since you can only add one-liners, you don't need to care about code identation.
@@ -143,8 +143,8 @@ An event handler contains Python code to run when an event happens. You can regi
 <Primo>
 
  <GlobalListeners>
-  <EventHandler event="before_dettach" action="{process.Stop()}"/>
-  <EventHandler event="after_attach" action="{process.Start()}"/>
+  <OnEvent event="before_dettach" action="{process.Stop()}"/>
+  <OnEvent event="after_attach" action="{process.Start()}"/>
  </GlobalListeners>
  
  <Parameters>
@@ -167,9 +167,9 @@ An event handler contains Python code to run when an event happens. You can regi
 In example above, both copies of notepad will start on primo start, because there's a global event handler that will start the process on the "after\_attach" event.
 
 ## Standard Event Handlers ##
-Some event handlers will be repeated in lots of config files. There's no point on having a process on the config file but never launching it. So, `<EventHandler event="after_attach" action="{process.Start()}"/>` should be present is most config files. Primo comes with lots of Standard Event Handlers:
+Some event handlers will be repeated in lots of config files. There's no point on having a process on the config file but never launching it. So, `<OnEvent event="after_attach" action="{process.Start()}"/>` should be present is most config files. Primo comes with lots of Standard Event Handlers:
 
-  * AutoStart: equivalent to `<EventHandler event="after_attach" action="{process.Start()}"/>`
-  * KillOnDetach: equivalent to `<EventHandler event="before_dettach" action="{process.Stop()}"/>`
+  * AutoStart: equivalent to `<OnEvent event="after_attach" action="{process.Start()}"/>`
+  * KillOnDetach: equivalent to `<OnEvent event="before_dettach" action="{process.Stop()}"/>`
   * EventLogger: this handler will respond to every event, and log it to stdout
-  * AutoRestart: restart process on finish or crash. Like `<EventHandler event="atfer_stop" action="{process.Start()}"/>`
+  * AutoRestart: restart process on finish or crash. Like `<OnEvent event="atfer_stop" action="{process.Start()}"/>`
